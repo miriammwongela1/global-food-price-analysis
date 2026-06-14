@@ -1,0 +1,1 @@
+Product Frequency = COUNT(Market_Prices[Commodity Name])
