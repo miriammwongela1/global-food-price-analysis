@@ -1,0 +1,1 @@
+Total Currencies = DISTINCTCOUNT(Market_Prices[Currency ID])
