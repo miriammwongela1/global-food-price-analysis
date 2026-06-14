@@ -1,0 +1,2 @@
+Price Volatility =
+STDEV.P(Market_Prices[Price USD])
