@@ -1,0 +1,2 @@
+Total Commodity Categories =
+DISTINCTCOUNT(Commodity[Commodity Category])
