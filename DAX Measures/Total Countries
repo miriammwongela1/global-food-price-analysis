@@ -1,0 +1,1 @@
+Total Countries = DISTINCTCOUNT(Market_Prices[Country ID])
