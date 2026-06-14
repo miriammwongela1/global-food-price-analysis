@@ -1,0 +1,1 @@
+Total Commodities = DISTINCTCOUNT(Market_Prices[Commodity Name])
