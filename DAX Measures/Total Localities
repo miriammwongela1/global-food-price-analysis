@@ -1,0 +1,1 @@
+Total Localities = DISTINCTCOUNT(Market_Prices[Locality ID])
