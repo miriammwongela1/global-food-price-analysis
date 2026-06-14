@@ -1,0 +1,17 @@
+Price YoY % =
+VAR CurrentYear = MAX('Calender'[Year])
+
+VAR CurrentPrice =
+    CALCULATE(
+        AVERAGE(Market_Prices[Price USD]),
+        FILTER(ALL('Calender'[Year]), 'Calender'[Year] = CurrentYear)
+    )
+
+VAR PreviousPrice =
+    CALCULATE(
+        AVERAGE(Market_Prices[Price USD]),
+        FILTER(ALL('Calender'[Year]), 'Calender'[Year] = CurrentYear - 1)
+    )
+
+RETURN
+DIVIDE(CurrentPrice - PreviousPrice, PreviousPrice)
