@@ -1,0 +1,126 @@
+let
+    // ─────────────────────────────────────────────
+    // 1. Base setup
+    // ─────────────────────────────────────────────
+    BaseUrl = "https://api.worldbank.org/",
+    Indicator = "PA.NUS.FCRF",
+    RelPath = "v2/country/all/indicator/" & Indicator,
+
+    // ─────────────────────────────────────────────
+    // 2. Fetch first page (to get metadata)
+    // ─────────────────────────────────────────────
+    FirstPage =
+        Json.Document(
+            Web.Contents(BaseUrl,
+                [
+                    RelativePath = RelPath,
+                    Query = [
+                        date = "2010:2017",
+                        format = "json",
+                        per_page = "20000",
+                        page = "1"
+                    ]
+                ]
+            )
+        ),
+
+    Meta = FirstPage{0},
+    TotalPages = Meta[pages],
+
+    PageList = List.Numbers(1, TotalPages),
+
+    // ─────────────────────────────────────────────
+    // 3. Function to get each page
+    // ─────────────────────────────────────────────
+    GetPage = (p as number) =>
+        let
+            Response =
+                Json.Document(
+                    Web.Contents(BaseUrl,
+                        [
+                            RelativePath = RelPath,
+                            Query = [
+                                date = "2010:2017",
+                                format = "json",
+                                per_page = "20000",
+                                page = Number.ToText(p)
+                            ]
+                        ]
+                    )
+                )
+        in
+            Response{1},
+
+    AllPages = List.Transform(PageList, each GetPage(_)),
+    AllData = List.Combine(AllPages),
+
+    // ─────────────────────────────────────────────
+    // 4. Convert to table
+    // ─────────────────────────────────────────────
+    ToTable = Table.FromList(AllData, Splitter.SplitByNothing(), {"Record"}),
+
+    Expanded = Table.ExpandRecordColumn(
+        ToTable,
+        "Record",
+        {"country", "date", "value"},
+        {"CountryRecord", "Year", "ExchangeRate_LCU_per_USD"}
+    ),
+
+    ExpandCountry = Table.ExpandRecordColumn(
+        Expanded,
+        "CountryRecord",
+        {"value"},
+        {"Country"}
+    ),
+
+    // ─────────────────────────────────────────────
+    // 5. Clean data types
+    // ─────────────────────────────────────────────
+    Typed = Table.TransformColumnTypes(
+        ExpandCountry,
+        {
+            {"Country", type text},
+            {"Year", Int64.Type},
+            {"ExchangeRate_LCU_per_USD", type number}
+        }
+    ),
+
+    CleanNulls = Table.SelectRows(
+        Typed,
+        each [ExchangeRate_LCU_per_USD] <> null
+    ),
+
+    // ─────────────────────────────────────────────
+    // 6. Filter ONLY your countries
+    // ─────────────────────────────────────────────
+    FilteredCountries = Table.SelectRows(CleanNulls, each List.Contains(
+        {
+            "Afghanistan","Algeria","Armenia","Azerbaijan","Bangladesh","Benin","Bhutan",
+            "Bolivia","Burkina Faso","Burundi","Cambodia","Cameroon","Cape Verde",
+            "Central African Republic","Chad","Colombia","Congo","Costa Rica",
+            "Cote d'Ivoire","Democratic Republic of the Congo","Djibouti","El Salvador",
+            "Ethiopia","Gambia","Georgia","Ghana","Guatemala","Guinea-Bissau","Guinea",
+            "Haiti","Honduras","India","Indonesia","Iran","Iraq","Jordan","Kenya",
+            "Kyrgyzstan","Lao People's Democratic Republic","Lebanon","Lesotho",
+            "Liberia","Madagascar","Malawi","Mali","Mauritania","Mozambique","Myanmar",
+            "Nepal","Niger","Nigeria","Pakistan","Panama","Peru","Philippines","Rwanda",
+            "Senegal","Somalia","Sri Lanka","Swaziland","Syrian Arab Republic",
+            "Tajikistan","Timor-Leste","Turkey","Uganda","Ukraine",
+            "United Republic of Tanzania","Yemen","Zambia","Zimbabwe",
+            "State of Palestine","Sudan","Egypt","South Sudan"
+        },
+        [Country]
+    )),
+
+    // ─────────────────────────────────────────────
+    // 7. Final cleanup
+    // ─────────────────────────────────────────────
+    Sorted = Table.Sort(FilteredCountries,
+        {{"Country", Order.Ascending}, {"Year", Order.Ascending}}
+    ),
+    #"Added Country Year Column" = Table.AddColumn(Sorted, "Country Year", each [Country] & "-" & Text.From([Year])),
+    #"Removed Duplicates" = Table.Distinct(#"Added Country Year Column", {"Country Year"}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Removed Duplicates",{{"Year", Int64.Type}})
+
+in
+    #"Changed Type"
