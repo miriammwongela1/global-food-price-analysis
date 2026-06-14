@@ -1,0 +1,17 @@
+FX YoY % =
+VAR CurrentYear = MAX('Calender'[Year])
+
+VAR CurrentFX =
+    CALCULATE(
+        AVERAGE(Exchange_Rate[ExchangeRate_LCU_per_USD]),
+        FILTER(ALL(Exchange_Rate), Exchange_Rate[Year] = CurrentYear)
+    )
+
+VAR PreviousFX =
+    CALCULATE(
+        AVERAGE(Exchange_Rate[ExchangeRate_LCU_per_USD]),
+        FILTER(ALL(Exchange_Rate), Exchange_Rate[Year] = CurrentYear - 1)
+    )
+
+RETURN
+DIVIDE(CurrentFX - PreviousFX, PreviousFX)
