@@ -1,0 +1,33 @@
+Price Acceleration =
+VAR CurrentYearValue =
+    CALCULATE(
+        [Average Price ($)],
+        FILTER(ALL('Calender'[Year]), 'Calender'[Year] = MAX('Calender'[Year]))
+    )
+
+VAR PrevYearValue =
+    CALCULATE(
+        [Average Price ($)],
+        FILTER(ALL('Calender'[Year]), 'Calender'[Year] = MAX('Calender'[Year]) - 1)
+    )
+
+VAR CurrentYoY =
+    DIVIDE(CurrentYearValue - PrevYearValue, PrevYearValue)
+
+VAR PrevYoY =
+    CALCULATE(
+        VAR CY =
+            CALCULATE(
+                [Average Price ($)],
+                FILTER(ALL('Calender'[Year]), 'Calender'[Year] = MAX('Calender'[Year]) - 1)
+            )
+        VAR PY =
+            CALCULATE(
+                [Average Price ($)],
+                FILTER(ALL('Calender'[Year]), 'Calender'[Year] = MAX('Calender'[Year]) - 2)
+            )
+        RETURN DIVIDE(CY - PY, PY)
+    )
+
+RETURN
+CurrentYoY - PrevYoY
